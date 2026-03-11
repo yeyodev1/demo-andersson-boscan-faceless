@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch } from 'vue'
+import { ref, nextTick, watch, onUnmounted } from 'vue'
 
 const luisImg = new URL('@/assets/avatars/luis/image.png', import.meta.url).href
 const mauroImg = new URL('@/assets/avatars/mauro/image.png', import.meta.url).href
@@ -20,6 +20,13 @@ const shakeError = ref(false)
 const topic = ref('')
 const topicError = ref(false)
 
+const isGenerating = ref(false)
+const isVideoUnlocked = ref(false)
+const generationProgress = ref(0)
+const timeLeft = ref(35)
+let generationInterval: ReturnType<typeof setInterval> | null = null
+let generationTimeout: ReturnType<typeof setTimeout> | null = null
+
 function openDemo() {
   showDemo.value = true
   step.value = 1
@@ -28,11 +35,22 @@ function openDemo() {
   shakeError.value = false
   topic.value = ''
   topicError.value = false
+  isGenerating.value = false
+  isVideoUnlocked.value = false
+  if (generationInterval) clearInterval(generationInterval)
+  if (generationTimeout) clearTimeout(generationTimeout)
 }
 
 function closeDemo() {
   showDemo.value = false
+  if (generationInterval) clearInterval(generationInterval)
+  if (generationTimeout) clearTimeout(generationTimeout)
 }
+
+onUnmounted(() => {
+  if (generationInterval) clearInterval(generationInterval)
+  if (generationTimeout) clearTimeout(generationTimeout)
+})
 
 function selectAvatar(id: string) {
   selectedAvatar.value = id
@@ -59,6 +77,26 @@ function confirmTopic() {
   }
   topicError.value = false
   step.value = 3
+
+  isGenerating.value = true
+  isVideoUnlocked.value = false
+  timeLeft.value = 35
+  generationProgress.value = 0
+
+  if (generationInterval) clearInterval(generationInterval)
+  if (generationTimeout) clearTimeout(generationTimeout)
+
+  generationInterval = setInterval(() => {
+    if (timeLeft.value > 0) {
+      timeLeft.value--
+      generationProgress.value = Math.min(100, Math.round(((35 - timeLeft.value) / 35) * 100))
+    }
+  }, 1000)
+
+  generationTimeout = setTimeout(() => {
+    if (generationInterval) clearInterval(generationInterval)
+    isGenerating.value = false
+  }, 35000)
 }
 
 watch(step, (val) => {
@@ -200,19 +238,48 @@ watch(step, (val) => {
         <!-- STEP 3: Video -->
         <Transition name="fade" mode="out-in">
           <div v-if="step === 3" key="step3" class="demo-step demo-step--video">
-            <div class="video-header">
-              <span class="video-badge">VIDEO GENERADO</span>
-              <h2 class="demo-step__title">Tu video está listo</h2>
-              <p class="demo-step__subtitle">
-                Tema: <strong>"{{ topic }}"</strong>
-              </p>
-            </div>
+            
+            <!-- GENERATING STATE -->
+            <template v-if="isGenerating">
+              <div class="generating-state">
+                <div class="spinner"></div>
+                <h2 class="demo-step__title">Generando video...</h2>
+                <p class="demo-step__subtitle" style="max-width: 440px; margin: 0 auto; line-height: 1.6;">
+                  Nos demoraremos aprox de <strong>30 a 45 segundos</strong>, es una prueba.<br />
+                  <span style="font-size: 0.8rem; opacity: 0.6; display: block; margin-top: 0.5rem;">Un video más largo podría demorar hasta 4 minutos.</span>
+                </p>
+                <div class="progress-wrap">
+                  <div class="progress-bar">
+                    <div class="progress-bar__fill" :style="{ width: generationProgress + '%' }"></div>
+                  </div>
+                  <span class="time-left">{{ timeLeft }}s restantes</span>
+                </div>
+              </div>
+            </template>
 
-            <div class="video-wrap">
-              <wistia-player media-id="p6lym8ts7d" aspect="1.7777777777777777"></wistia-player>
-            </div>
+            <!-- RESULT STATE -->
+            <template v-else>
+              <div class="video-header">
+                <span class="video-badge">VIDEO GENERADO</span>
+                <h2 class="demo-step__title">Tu video está listo</h2>
+                <p class="demo-step__subtitle">
+                  Tema: <strong>"{{ topic }}"</strong>
+                </p>
+              </div>
 
-            <!-- Automation CTA -->
+              <div class="video-wrap" :class="{ 'video-wrap--blurred': !isVideoUnlocked }">
+                <Transition name="fade">
+                  <div v-if="!isVideoUnlocked" class="video-overlay">
+                    <button class="btn-cta-watch" @click="isVideoUnlocked = true">
+                      <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Ver Video
+                    </button>
+                  </div>
+                </Transition>
+                <wistia-player media-id="p6lym8ts7d" aspect="1.7777777777777777"></wistia-player>
+              </div>
+
+              <!-- Automation CTA -->
             <div class="automation">
               <div class="automation__divider">
                 <span>POTENCIA TU ALCANCE</span>
@@ -250,6 +317,7 @@ watch(step, (val) => {
                 Automatización total. Contenido constante. Resultados reales.
               </p>
             </div>
+            </template>
           </div>
         </Transition>
       </div>
@@ -701,10 +769,75 @@ watch(step, (val) => {
   padding: 0.5rem 0.9rem;
 }
 
+/* ─────────── GENERATING STATE ─────────── */
+.generating-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 3rem 1rem;
+}
+
+.spinner {
+  width: 54px;
+  height: 54px;
+  border: 4px solid rgba($primary, 0.15);
+  border-left-color: $primary;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.progress-wrap {
+  width: 100%;
+  max-width: 320px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba($white, 0.08);
+  border-radius: 100px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar__fill {
+  height: 100%;
+  background: $primary;
+  border-radius: 100px;
+  transition: width 1s linear;
+  width: 0%;
+}
+
+.time-left {
+  font-family: $font-secondary;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: rgba($white, 0.5);
+  letter-spacing: 0.02em;
+}
+
 /* ─────────── VIDEO SECTION ─────────── */
 .video-header {
   text-align: center;
   margin-bottom: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+
+  .demo-step__subtitle {
+    margin-top: 0;
+  }
 }
 
 .video-badge {
@@ -725,10 +858,53 @@ watch(step, (val) => {
   border-radius: 16px;
   overflow: hidden;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.4);
+  position: relative;
+  transition: filter 0.5s ease;
+
+  &--blurred {
+    wistia-player {
+      filter: blur(12px) brightness(0.7);
+      pointer-events: none;
+    }
+  }
 
   wistia-player {
     display: block;
     width: 100%;
+    transition: filter 0.6s ease;
+  }
+}
+
+.video-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(#0d1b3e, 0.2);
+  backdrop-filter: blur(2px);
+}
+
+.btn-cta-watch {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: $primary;
+  color: $white;
+  border: none;
+  border-radius: 100px;
+  font-family: $font-principal;
+  font-size: 1.1rem;
+  font-weight: 800;
+  padding: 1rem 2.4rem;
+  cursor: pointer;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 40px rgba($primary, 0.5);
+
+  &:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: 0 0 60px rgba($primary, 0.7);
   }
 }
 

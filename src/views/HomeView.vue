@@ -100,9 +100,9 @@ function confirmTopic() {
 }
 
 watch(step, (val) => {
-  if (val === 3 && !document.querySelector('script[src*="uxjz9v8jyh"]')) {
+  if (val === 3 && !document.querySelector('script[src*="p6lym8ts7d"]')) {
     const s = document.createElement('script')
-    s.src = 'https://fast.wistia.com/embed/uxjz9v8jyh.js'
+    s.src = 'https://fast.wistia.com/embed/p6lym8ts7d.js'
     s.async = true
     s.type = 'module'
     document.head.appendChild(s)
@@ -276,7 +276,7 @@ watch(step, (val) => {
                     </button>
                   </div>
                 </Transition>
-                <wistia-player media-id="uxjz9v8jyh" aspect="1.7777777777777777"></wistia-player>
+                <wistia-player media-id="p6lym8ts7d" aspect="1.7777777777777777"></wistia-player>
               </div>
 
               <!-- Automation CTA -->

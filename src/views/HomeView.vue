@@ -100,9 +100,9 @@ function confirmTopic() {
 }
 
 watch(step, (val) => {
-  if (val === 3 && !document.querySelector('script[src*="p6lym8ts7d"]')) {
+  if (val === 3 && !document.querySelector('script[src*="uxjz9v8jyh"]')) {
     const s = document.createElement('script')
-    s.src = 'https://fast.wistia.com/embed/p6lym8ts7d.js'
+    s.src = 'https://fast.wistia.com/embed/uxjz9v8jyh.js'
     s.async = true
     s.type = 'module'
     document.head.appendChild(s)
@@ -276,7 +276,7 @@ watch(step, (val) => {
                     </button>
                   </div>
                 </Transition>
-                <wistia-player media-id="p6lym8ts7d" aspect="1.7777777777777777"></wistia-player>
+                <wistia-player media-id="uxjz9v8jyh" aspect="1.7777777777777777"></wistia-player>
               </div>
 
               <!-- Automation CTA -->
@@ -788,7 +788,9 @@ watch(step, (val) => {
 }
 
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .progress-wrap {
@@ -1064,6 +1066,7 @@ watch(step, (val) => {
     opacity: 0;
     transform: translateY(24px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1071,11 +1074,27 @@ watch(step, (val) => {
 }
 
 @keyframes shake {
-  0%, 100% { transform: translateX(0); }
-  20% { transform: translateX(-8px); }
-  40% { transform: translateX(8px); }
-  60% { transform: translateX(-5px); }
-  80% { transform: translateX(5px); }
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-8px);
+  }
+
+  40% {
+    transform: translateX(8px);
+  }
+
+  60% {
+    transform: translateX(-5px);
+  }
+
+  80% {
+    transform: translateX(5px);
+  }
 }
 
 .shake {
